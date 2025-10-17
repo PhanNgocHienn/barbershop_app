@@ -29,25 +29,32 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Future<void> _changePassword() async {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
-      EasyLoading.show(status: 'Đang kiểm tra...');
+      EasyLoading.show(status: 'Đang xử lý...');
 
       final oldPassword = _oldPasswordController.text.trim();
       final newPassword = _newPasswordController.text.trim();
 
       try {
+        // 1. Xác thực lại người dùng bằng mật khẩu cũ
         AuthCredential credential = EmailAuthProvider.credential(
           email: currentUser!.email!,
           password: oldPassword,
         );
         await currentUser!.reauthenticateWithCredential(credential);
+
+        // 2. Nếu thành công, cập nhật mật khẩu mới
         await currentUser!.updatePassword(newPassword);
 
         EasyLoading.dismiss();
         EasyLoading.showSuccess('Đổi mật khẩu thành công!');
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       } on FirebaseAuthException catch (e) {
+        // **THAY ĐỔI THÔNG BÁO LỖI TẠI ĐÂY**
         if (e.code == 'wrong-password') {
-          EasyLoading.showError('Mật khẩu cũ không chính xác.');
+          // Hiển thị thông báo theo yêu cầu của bạn
+          EasyLoading.showError('Nhập sai, yêu cầu nhập lại.');
         } else {
           EasyLoading.showError('Đã xảy ra lỗi: ${e.message}');
         }

@@ -1,6 +1,7 @@
 // lib/screens/appointments_screen.dart
 
 import 'package:barbershop_app/models/appointment_model.dart';
+import 'package:barbershop_app/screens/payment_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:intl/intl.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
-
   @override
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
 }
@@ -22,15 +22,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           .collection('appointments')
           .doc(appointmentId)
           .update({'status': 'cancelled'});
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã hủy lịch hẹn thành công.')),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Lỗi khi hủy lịch hẹn: $e')));
+      }
     }
   }
 
@@ -126,6 +128,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
     await FirebaseFirestore.instance
         .collection('barbers')
         .doc(appointment.barberId)
@@ -137,14 +140,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           'userName': user.displayName ?? 'Người dùng ẩn danh',
           'createdAt': FieldValue.serverTimestamp(),
         });
+
     await FirebaseFirestore.instance
         .collection('appointments')
         .doc(appointment.id)
         .update({'status': 'reviewed'});
-    if (mounted)
+
+    if (mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Cảm ơn bạn đã đánh giá!')));
+    }
   }
 
   Future<Map<String, String>> _getBarberDetails(String barberId) async {
@@ -153,11 +159,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           .collection('barbers')
           .doc(barberId)
           .get();
-      if (doc.exists)
+      if (doc.exists) {
         return {
           'name': doc.data()?['name'] ?? 'Không rõ',
           'imageUrl': doc.data()?['imageUrl'] ?? '',
         };
+      }
     } catch (e) {
       print("Lỗi khi lấy thông tin thợ: $e");
     }
@@ -186,7 +193,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         ),
         body: TabBarView(
           children: [
-            _buildAppointmentsList(statusToShow: ['scheduled']),
+            _buildAppointmentsList(statusToShow: ['scheduled', 'paid']),
             _buildAppointmentsList(
               statusToShow: ['completed', 'cancelled', 'reviewed'],
             ),
@@ -205,13 +212,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           .orderBy('appointmentTime', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return const Center(child: Text('Đã xảy ra lỗi khi tải dữ liệu.'));
-        if (snapshot.connectionState == ConnectionState.waiting)
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(child: Text('Không có lịch hẹn nào.'));
+        }
+
         final appointmentDocs = snapshot.data!.docs;
+
         return ListView.builder(
           padding: const EdgeInsets.only(top: 8, bottom: 8),
           itemCount: appointmentDocs.length,
@@ -222,18 +234,32 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             return FutureBuilder<Map<String, String>>(
               future: _getBarberDetails(appointment.barberId),
               builder: (context, barberSnapshot) {
-                if (!barberSnapshot.hasData)
+                if (!barberSnapshot.hasData) {
                   return const ListTile(title: Text('Đang tải lịch hẹn...'));
+                }
                 final barberDetails = barberSnapshot.data!;
+
                 return AppointmentCard(
                   appointment: appointment,
                   barberName: barberDetails['name']!,
                   barberImageUrl: barberDetails['imageUrl']!,
-                  onCancel: appointment.status == 'scheduled'
+                  onCancel:
+                      appointment.status == 'scheduled' ||
+                          appointment.status == 'paid'
                       ? () => _showCancelConfirmationDialog(appointment.id)
                       : null,
                   onReview: appointment.status == 'completed'
                       ? () => _showReviewDialog(appointment)
+                      : null,
+                  onPay: appointment.status == 'scheduled'
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (ctx) =>
+                                  PaymentScreen(appointment: appointment),
+                            ),
+                          );
+                        }
                       : null,
                 );
               },
@@ -251,6 +277,7 @@ class AppointmentCard extends StatelessWidget {
   final String barberImageUrl;
   final VoidCallback? onCancel;
   final VoidCallback? onReview;
+  final VoidCallback? onPay;
 
   const AppointmentCard({
     super.key,
@@ -259,17 +286,24 @@ class AppointmentCard extends StatelessWidget {
     required this.barberImageUrl,
     this.onCancel,
     this.onReview,
+    this.onPay,
   });
 
   Widget _buildStatusBadge() {
     Color badgeColor;
     String statusText;
     IconData iconData;
+
     switch (appointment.status) {
       case 'scheduled':
         badgeColor = Colors.blue;
         statusText = 'Đã đặt';
         iconData = Icons.check_circle_outline;
+        break;
+      case 'paid':
+        badgeColor = Colors.teal;
+        statusText = 'Đã thanh toán';
+        iconData = Icons.credit_card;
         break;
       case 'completed':
         badgeColor = Colors.green;
@@ -379,27 +413,40 @@ class AppointmentCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (onCancel != null || onReview != null)
+            if (onPay != null || onCancel != null || onReview != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
-                child: Center(
-                  child: onCancel != null
-                      ? TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.red.shade700,
-                          ),
-                          icon: const Icon(Icons.cancel_outlined),
-                          label: const Text('Hủy lịch hẹn'),
-                          onPressed: onCancel,
-                        )
-                      : TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.orange.shade800,
-                          ),
-                          icon: const Icon(Icons.star_border),
-                          label: const Text('Viết đánh giá'),
-                          onPressed: onReview,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (onPay != null)
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
                         ),
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: const Text('Thanh toán'),
+                        onPressed: onPay,
+                      ),
+                    if (onCancel != null)
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red.shade700,
+                        ),
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text('Hủy lịch'),
+                        onPressed: onCancel,
+                      ),
+                    if (onReview != null)
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.orange.shade800,
+                        ),
+                        icon: const Icon(Icons.star_border),
+                        label: const Text('Đánh giá'),
+                        onPressed: onReview,
+                      ),
+                  ],
                 ),
               ),
           ],
