@@ -2,6 +2,7 @@
 
 import 'package:barbershop_app/screens/otp_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class AuthService {
@@ -14,17 +15,21 @@ class AuthService {
     required bool isLogin,
   }) async {
     try {
+      UserCredential cred;
       if (isLogin) {
-        return await _auth.signInWithEmailAndPassword(
+        cred = await _auth.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
       } else {
-        return await _auth.createUserWithEmailAndPassword(
+        cred = await _auth.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
       }
+      // Ensure user document exists/updated
+      await _ensureUserDocument(cred.user);
+      return cred;
     } on FirebaseAuthException catch (e) {
       print("Lỗi FirebaseAuth: ${e.message}");
       return null;
@@ -37,7 +42,8 @@ class AuthService {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
+          final cred = await _auth.signInWithCredential(credential);
+          await _ensureUserDocument(cred.user);
         },
         verificationFailed: (FirebaseAuthException e) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -67,7 +73,8 @@ class AuthService {
         verificationId: verificationId,
         smsCode: smsCode,
       );
-      await _auth.signInWithCredential(credential);
+      final cred = await _auth.signInWithCredential(credential);
+      await _ensureUserDocument(cred.user);
       return true;
     } catch (e) {
       print("Lỗi xác thực OTP: $e");
@@ -82,4 +89,28 @@ class AuthService {
 
   // --- Stream lắng nghe trạng thái đăng nhập ---
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  Future<void> _ensureUserDocument(User? user) async {
+    if (user == null) return;
+    final users = FirebaseFirestore.instance.collection('users');
+    final docRef = users.doc(user.uid);
+    final snap = await docRef.get();
+    final now = FieldValue.serverTimestamp();
+    final data = {
+      'displayName': user.displayName ?? '',
+      'email': user.email ?? '',
+      'phoneNumber': user.phoneNumber ?? '',
+      'enabled': true,
+      'isAdmin': false,
+      'updatedAt': now,
+    };
+    if (!snap.exists) {
+      await docRef.set({
+        ...data,
+        'createdAt': now,
+      }, SetOptions(merge: true));
+    } else {
+      await docRef.set(data, SetOptions(merge: true));
+    }
+  }
 }

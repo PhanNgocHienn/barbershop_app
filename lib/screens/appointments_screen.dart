@@ -1,11 +1,10 @@
-// lib/screens/appointments_screen.dart
-
 import 'package:barbershop_app/models/appointment_model.dart';
 import 'package:barbershop_app/screens/payment_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:barbershop_app/screens/barber_details_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -175,16 +174,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Widget build(BuildContext context) {
     if (currentUserId == null) {
       return const Scaffold(
+        backgroundColor: Colors.white,
         body: Center(child: Text('Không thể xác định người dùng.')),
       );
     }
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('Lịch hẹn của tôi'),
           bottom: const TabBar(
-            indicatorColor: Colors.white,
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: Colors.black,
             tabs: [
               Tab(text: 'Sắp tới'),
               Tab(text: 'Lịch sử'),

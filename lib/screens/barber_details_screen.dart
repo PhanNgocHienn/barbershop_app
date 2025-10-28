@@ -276,3 +276,74 @@ class ReviewCard extends StatelessWidget {
     );
   }
 }
+
+// --- New widget: BarberListScreen ---
+// Simple list of barbers fetched from Firestore.
+// Tap an item to navigate to BarberDetailsScreen.
+class BarberListScreen extends StatelessWidget {
+  const BarberListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Danh sách thợ'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        titleTextStyle: const TextStyle(
+          color: Colors.black87,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      backgroundColor: Colors.white,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('barbers').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError)
+            return const Center(child: Text('Lỗi khi tải dữ liệu'));
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty)
+            return const Center(child: Text('Chưa có thợ nào.'));
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final barber = Barber.fromMap(data, id: docs[index].id);
+              return ListTile(
+                leading:
+                    barber.avatarUrl != null && barber.avatarUrl!.isNotEmpty
+                    ? CircleAvatar(
+                        backgroundImage: NetworkImage(barber.avatarUrl!),
+                      )
+                    : const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(
+                  barber.name ?? 'Không tên',
+                  style: const TextStyle(color: Colors.black87),
+                ),
+                subtitle: Text(
+                  barber.description ?? '',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BarberDetailsScreen(barber: barber),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}

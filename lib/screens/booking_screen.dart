@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
+import 'package:barbershop_app/screens/barber_details_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -108,28 +109,44 @@ class _BookingScreenState extends State<BookingScreen> {
     );
 
     try {
-      // 4. Gửi lên Firestore
-      await FirebaseFirestore.instance.collection('appointments').add({
-        // --- Dữ liệu từ Form mới ---
-        'userName': _nameController.text.trim(),
-        'userPhone': _phoneController.text.trim(),
-        'guests': int.tryParse(_guestsController.text.trim()) ?? 1,
-        'location': _selectedLocation,
+      // 4. Chống trùng slot bằng transaction + ID định danh
+      final slotKey =
+          '${_selectedBarberId}_${DateFormat('yyyyMMdd_HHmm').format(appointmentDateTime)}';
+      final docRef =
+          FirebaseFirestore.instance.collection('appointments').doc(slotKey);
 
-        // --- Dữ liệu từ logic cũ ---
-        'userId': user.uid,
-        'serviceName': widget.service.name,
-        'servicePrice': widget.service.price,
-        'barberId': _selectedBarberId,
-        'appointmentTime': Timestamp.fromDate(appointmentDateTime),
-        'status': 'scheduled',
-        'createdAt': FieldValue.serverTimestamp(),
+      await FirebaseFirestore.instance.runTransaction((txn) async {
+        final snap = await txn.get(docRef);
+        if (snap.exists) {
+          final existingStatus = snap.data()?['status'] as String?;
+          // Nếu slot đã tồn tại và chưa bị hủy, chặn đặt trùng
+          if (existingStatus != null && existingStatus != 'cancelled') {
+            throw Exception('Khung giờ này đã có người đặt.');
+          }
+        }
+
+        txn.set(docRef, {
+          // --- Dữ liệu từ Form mới ---
+          'userName': _nameController.text.trim(),
+          'userPhone': _phoneController.text.trim(),
+          'guests': int.tryParse(_guestsController.text.trim()) ?? 1,
+          'location': _selectedLocation,
+
+          // --- Dữ liệu từ logic cũ ---
+          'userId': user.uid,
+          'serviceName': widget.service.name,
+          'servicePrice': widget.service.price,
+          'barberId': _selectedBarberId,
+          'appointmentTime': Timestamp.fromDate(appointmentDateTime),
+          'status': 'scheduled',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       });
 
       EasyLoading.showSuccess('Đặt lịch thành công!');
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      EasyLoading.showError('Đã xảy ra lỗi: $e');
+      EasyLoading.showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       EasyLoading.dismiss();
     }
@@ -140,12 +157,21 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: scaffoldBgColor,
-      // Dùng AppBar trong suốt để tiêu đề "BOOKING" nằm trong form
+      backgroundColor: Colors.white,
+
+      // AppBar trong suốt, không bóng, chỉ định màu icon và tiêu đề
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // chỉ khai báo 1 lần
         elevation: 0,
-        iconTheme: IconThemeData(color: formBgColor),
+        iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text(
+          'BOOKING',
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: Center(
         child: ConstrainedBox(

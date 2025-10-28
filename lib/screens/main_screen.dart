@@ -38,9 +38,9 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: PageStorage(bucket: _bucket, child: _screens[_selectedIndex]),
       bottomNavigationBar: ConvexAppBar(
-        backgroundColor: Theme.of(context).primaryColor,
-        color: Colors.white,
-        activeColor: Colors.amberAccent,
+        backgroundColor: Colors.white,
+        color: Colors.black87,
+        activeColor: Colors.black,
         style: TabStyle.reactCircle,
         items: const [
           TabItem(icon: Icons.home, title: 'Trang chủ'),

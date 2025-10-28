@@ -5,10 +5,12 @@ import 'package:barbershop_app/screens/barber_details_screen.dart';
 import 'package:barbershop_app/screens/booking_screen.dart'; // Form ĐỘNG
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 // 1. THÊM IMPORT CHO FILE MENU TĨNH
 import 'package:barbershop_app/screens/service_menu_screen.dart';
+import 'admin/admin_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,20 +21,34 @@ class HomeScreen extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF2B2B2B),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
-        elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'BESPOKE BARBERING',
-          style: TextStyle(
-            color: Color(0xFFD4AF37),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+        title: const Text('BESPOKE BARBERING'),
+        actions: [
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(FirebaseAuth.instance.currentUser?.uid)
+                .snapshots(),
+            builder: (context, snapshot) {
+              final isAdmin = (snapshot.data?.data() as Map<String, dynamic>?)?['isAdmin'] == true;
+              if (!isAdmin) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.admin_panel_settings),
+                tooltip: 'Admin',
+                onPressed: () async {
+                  // avoid hot-reload import issues
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminScreen(),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-        ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -67,31 +83,31 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, // Để nút bấm co dãn
       children: [
-        const Text(
+        Text(
           'DỊCH VỤ CỦA CHÚNG TÔI',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFD4AF37),
-            letterSpacing: 1,
+            color: Colors.black.withOpacity(0.85),
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: const Color(0xFFD4AF37)),
+        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
 
         // 2. THÊM NÚT ĐIỀU HƯỚNG TẠI ĐÂY
         OutlinedButton.icon(
-          icon: const Icon(Icons.menu_book, color: Color(0xFFD4AF37), size: 20),
+          icon: const Icon(Icons.menu_book, color: Colors.black, size: 20),
           label: const Text(
             'XEM CHI TIẾT BẢNG GIÁ DỊCH VỤ',
             style: TextStyle(
-              color: Color(0xFFD4AF37),
+              color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.5)),
+            side: BorderSide(color: Colors.black.withOpacity(0.2)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -117,12 +133,7 @@ class HomeScreen extends StatelessWidget {
               return const CompactServicesSkeleton();
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Chưa có dịch vụ nào.',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              );
+              return const Center(child: Text('Chưa có dịch vụ nào.'));
             }
             final serviceDocs = snapshot.data!.docs;
             return Column(
@@ -151,17 +162,17 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'THỢ CẮT TÓC HÀNG ĐẦU',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFD4AF37),
-            letterSpacing: 1,
+            color: Colors.black.withOpacity(0.85),
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: const Color(0xFFD4AF37)),
+        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
         StreamBuilder<QuerySnapshot>(
           // Sửa lỗi treo máy: Giới hạn tải 10 thợ
@@ -171,12 +182,7 @@ class HomeScreen extends StatelessWidget {
               return const BarbersGridSkeleton();
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Chưa có thợ nào.',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              );
+              return const Center(child: Text('Chưa có thợ nào.'));
             }
             final barberDocs = snapshot.data!.docs;
             return GridView.builder(
@@ -229,17 +235,17 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'ĐỊA ĐIỂM CỦA CHÚNG TÔI',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFD4AF37),
-            letterSpacing: 1,
+            color: Colors.black.withOpacity(0.85),
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: const Color(0xFFD4AF37)),
+        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
         Column(
           children: locations.map((loc) {
@@ -266,15 +272,9 @@ class HomeScreen extends StatelessWidget {
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +296,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -305,7 +305,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   address,
                   style: const TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: Colors.black54,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -314,7 +314,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   description,
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: Colors.black54,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -348,19 +348,9 @@ class CompactServiceCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFD4AF37).withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.grey.shade300, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -372,7 +362,7 @@ class CompactServiceCard extends StatelessWidget {
                   Text(
                     service.name,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black87,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -381,7 +371,7 @@ class CompactServiceCard extends StatelessWidget {
                   Text(
                     '${service.duration} phút',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.black54,
                       fontSize: 13,
                     ),
                   ),
@@ -391,7 +381,7 @@ class CompactServiceCard extends StatelessWidget {
             Text(
               '${service.price.toStringAsFixed(0)}đ',
               style: const TextStyle(
-                color: Color(0xFFD4AF37),
+                color: Colors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -422,15 +412,9 @@ class BarberGridCard extends StatelessWidget {
         // Sửa lỗi bo góc: Thêm clipBehavior
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
           children: [
@@ -440,7 +424,7 @@ class BarberGridCard extends StatelessWidget {
                 imageUrl: barber.imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: Colors.grey[800]),
+                placeholder: (_, __) => Container(color: Colors.grey[200]),
               ),
             ),
             Padding(
@@ -450,7 +434,7 @@ class BarberGridCard extends StatelessWidget {
                   Text(
                     barber.name,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black87,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -459,7 +443,7 @@ class BarberGridCard extends StatelessWidget {
                   Text(
                     barber.specialty,
                     style: const TextStyle(
-                      color: Color(0xFFD4AF37),
+                      color: Colors.black54,
                       fontSize: 13,
                     ),
                   ),
@@ -479,8 +463,8 @@ class CompactServicesSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[800]!,
-      highlightColor: Colors.grey[600]!,
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
       child: Column(
         children: List.generate(
           3,
@@ -503,8 +487,8 @@ class BarbersGridSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[800]!,
-      highlightColor: Colors.grey[600]!,
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
