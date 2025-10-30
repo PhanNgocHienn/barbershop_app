@@ -22,18 +22,35 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Nếu đã đăng nhập, kiểm tra role
+        // Nếu đã đăng nhập, kiểm tra trạng thái và role
         if (snapshot.hasData) {
           final user = snapshot.data!;
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .snapshots(),
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
-              final isAdmin = (userSnap.data?.data() as Map<String, dynamic>?)?['isAdmin'] == true;
+
+              if (!userSnap.hasData) {
+                return const AuthScreen();
+              }
+
+              final userData = userSnap.data?.data() as Map<String, dynamic>?;
+              // Kiểm tra tài khoản có bị vô hiệu hóa không
+              final bool isEnabled = userData?['enabled'] == true;
+              if (!isEnabled) {
+                // Tài khoản bị disabled - tự động đăng xuất
+                AuthService().signOut();
+                return const AuthScreen();
+              }
+
+              final bool isAdmin = userData?['isAdmin'] == true;
               if (isAdmin) return const AdminScreen();
               return const MainScreen();
             },
