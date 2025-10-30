@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'admin_services_screen.dart';
+import 'admin_barbers_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_bookings_screen.dart';
 
@@ -16,7 +17,7 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: _scaffoldBgColor, // Sử dụng hằng số
         appBar: AppBar(
@@ -50,6 +51,7 @@ class AdminScreen extends StatelessWidget {
             ),
             tabs: const [
               Tab(text: 'Services', icon: Icon(Icons.miscellaneous_services)),
+              Tab(text: 'Barbers', icon: Icon(Icons.person)),
               Tab(text: 'Users', icon: Icon(Icons.group)),
               Tab(text: 'Bookings', icon: Icon(Icons.calendar_today)),
             ],
@@ -58,6 +60,7 @@ class AdminScreen extends StatelessWidget {
         body: const TabBarView(
           children: [
             AdminServicesScreen(),
+            AdminBarbersScreen(),
             AdminUsersScreen(),
             AdminBookingsScreen(),
           ],
@@ -71,7 +74,9 @@ class AdminScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận đăng xuất'),
-        content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản admin?'),
+        content: const Text(
+          'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản admin?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),

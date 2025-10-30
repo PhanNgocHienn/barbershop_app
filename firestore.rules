@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function requesterUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isRequesterEnabled() {
+      return isSignedIn() && requesterUserDoc().data.enabled == true;
+    }
+
+    function isAdmin() {
+      return isRequesterEnabled() && requesterUserDoc().data.isAdmin == true;
+    }
+
+    // users collection
+    match /users/{userId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+
+      // Tạo doc user cho chính mình. Không được tự set isAdmin; enabled mặc định true.
+      allow create: if isSignedIn()
+                    && request.auth.uid == userId
+                    && request.resource.data.isAdmin == false
+                    && request.resource.data.enabled == true;
+
+      // Update: chủ tài khoản chỉ được update các field KHÔNG gồm isAdmin, enabled.
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+                      'displayName', 'email', 'phoneNumber', 'updatedAt'
+                    ]);
+
+      // Admin có thể cập nhật mọi field (bao gồm isAdmin, enabled) và xóa.
+      allow delete, update: if isAdmin();
+    }
+
+    // barbers collection
+    match /barbers/{barberId} {
+      // Cho phép tất cả mọi người đọc thông tin thợ
+      allow read: if true;
+      
+      // Chỉ admin mới có quyền thêm, sửa, xóa thợ
+      allow create, update, delete: if isAdmin();
+    }
+
+    // services collection
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // appointments collection
+    match /appointments/{appointmentId} {
+      // Admin đọc tất cả; user chỉ đọc hẹn của mình
+      allow read: if isAdmin() ||
+                  (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Tạo lịch: phải đăng nhập và userId khớp uid, status lúc tạo là 'scheduled'
+      allow create: if isRequesterEnabled() &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.status == 'scheduled';
+
+      // Update:
+      // - Admin cập nhật bất kỳ.
+      // - Chủ sở hữu CHỈ được hủy (status -> 'cancelled'), không đổi field khác.
+      allow update: if isAdmin() ||
+        (
+          isSignedIn() &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.status == 'cancelled' &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'updatedAt'])
+        );
+
+      // Xóa: chỉ admin
+      allow delete: if isAdmin();
+    }
+
+    // barbers/{barberId}/reviews/{reviewId}
+    match /barbers/{barberId}/reviews/{reviewId} {
+      allow read: if true;
+
+      // Tạo review: phải đăng nhập
+      allow create: if isRequesterEnabled();
+
+      // Sửa/xóa review: admin hoặc chủ review
+      allow update, delete: if isAdmin() ||
+                            (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+  }
+}

@@ -1,5 +1,3 @@
-// lib/screens/barber_details_screen.dart
-
 import 'package:barbershop_app/models/barber_model.dart';
 import 'package:barbershop_app/models/review_model.dart';
 import 'package:barbershop_app/models/service_model.dart';

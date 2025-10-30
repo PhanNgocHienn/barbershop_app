@@ -32,7 +32,10 @@ class HomeScreen extends StatelessWidget {
                 .doc(FirebaseAuth.instance.currentUser?.uid)
                 .snapshots(),
             builder: (context, snapshot) {
-              final isAdmin = (snapshot.data?.data() as Map<String, dynamic>?)?['isAdmin'] == true;
+              final isAdmin =
+                  (snapshot.data?.data()
+                      as Map<String, dynamic>?)?['isAdmin'] ==
+                  true;
               if (!isAdmin) return const SizedBox.shrink();
               return IconButton(
                 icon: const Icon(Icons.admin_panel_settings),
@@ -40,9 +43,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () async {
                   // avoid hot-reload import issues
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AdminScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const AdminScreen()),
                   );
                 },
               );
@@ -101,10 +102,7 @@ class HomeScreen extends StatelessWidget {
           icon: const Icon(Icons.menu_book, color: Colors.black, size: 20),
           label: const Text(
             'XEM CHI TIẾT BẢNG GIÁ DỊCH VỤ',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           ),
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.black.withOpacity(0.2)),
@@ -370,10 +368,7 @@ class CompactServiceCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${service.duration} phút',
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                 ],
               ),
@@ -420,19 +415,29 @@ class BarberGridCard extends StatelessWidget {
           children: [
             Expanded(
               // Bỏ ClipRRect thừa
-              child: CachedNetworkImage(
-                imageUrl: barber.imageUrl,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: Colors.grey[200]),
-              ),
+              child: barber.imageUrl?.isNotEmpty == true
+                  ? CachedNetworkImage(
+                      imageUrl: barber.imageUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          Container(color: Colors.grey[200]),
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
                   Text(
-                    barber.name,
+                    barber.name ?? 'Chưa có tên',
                     style: const TextStyle(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,
@@ -441,11 +446,8 @@ class BarberGridCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    barber.specialty,
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 13,
-                    ),
+                    barber.specialty ?? 'Chưa có chuyên môn',
+                    style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                 ],
               ),

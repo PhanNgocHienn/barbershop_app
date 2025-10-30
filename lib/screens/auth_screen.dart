@@ -2,6 +2,7 @@
 
 import 'package:barbershop_app/screens/phone_auth_screen.dart';
 import 'package:barbershop_app/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -29,13 +30,63 @@ class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => _isLoading = true);
 
-    await _authService.signInOrRegisterWithEmail(
-      email: _email.trim(),
-      password: _password.trim(),
-      isLogin: _isLogin,
-    );
+    try {
+      final result = await _authService.signInOrRegisterWithEmail(
+        email: _email.trim(),
+        password: _password.trim(),
+        isLogin: _isLogin,
+      );
 
-    if (mounted) setState(() => _isLoading = false);
+      if (result == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isLogin
+                  ? 'Email hoặc mật khẩu không đúng'
+                  : 'Không thể tạo tài khoản. Email có thể đã được sử dụng.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String message = 'Đã có lỗi xảy ra';
+
+        switch (e.code) {
+          case 'user-not-found':
+            message = 'Không tìm thấy tài khoản với email này';
+            break;
+          case 'wrong-password':
+            message = 'Mật khẩu không đúng';
+            break;
+          case 'email-already-in-use':
+            message = 'Email này đã được sử dụng';
+            break;
+          case 'invalid-email':
+            message = 'Email không hợp lệ';
+            break;
+          case 'weak-password':
+            message = 'Mật khẩu quá yếu';
+            break;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi không xác định: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

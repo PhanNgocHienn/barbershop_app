@@ -1,5 +1,3 @@
-// lib/services/auth_service.dart
-
 import 'package:barbershop_app/screens/otp_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -92,25 +90,56 @@ class AuthService {
 
   Future<void> _ensureUserDocument(User? user) async {
     if (user == null) return;
-    final users = FirebaseFirestore.instance.collection('users');
-    final docRef = users.doc(user.uid);
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snap = await docRef.get();
-    final now = FieldValue.serverTimestamp();
-    final data = {
-      'displayName': user.displayName ?? '',
-      'email': user.email ?? '',
-      'phoneNumber': user.phoneNumber ?? '',
-      'enabled': true,
-      'isAdmin': false,
-      'updatedAt': now,
-    };
+
     if (!snap.exists) {
+      // Tài khoản mới - set giá trị mặc định
       await docRef.set({
-        ...data,
-        'createdAt': now,
-      }, SetOptions(merge: true));
+        'displayName': user.displayName ?? '',
+        'email': user.email ?? '',
+        'phoneNumber': user.phoneNumber ?? '',
+        'enabled': true,
+        'isAdmin': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } else {
-      await docRef.set(data, SetOptions(merge: true));
+      // Tài khoản đã tồn tại - chỉ cập nhật thông tin cơ bản, giữ nguyên quyền admin
+      await docRef.update({
+        'displayName': user.displayName ?? '',
+        'email': user.email ?? '',
+        'phoneNumber': user.phoneNumber ?? '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     }
+  }
+
+  // Tạo tài khoản admin mới
+  Future<UserCredential> createAdminAccount(
+    String email,
+    String password,
+  ) async {
+    // 1. Tạo tài khoản trong Authentication
+    final userCred = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    // 2. Tạo document trong collection users với isAdmin = true
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userCred.user!.uid)
+        .set({
+          'displayName': '',
+          'email': email,
+          'phoneNumber': '',
+          'isAdmin': true,
+          'enabled': true,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+    return userCred;
   }
 }
