@@ -1,4 +1,3 @@
-import 'package:barbershop_app/models/barber_model.dart';
 import 'package:barbershop_app/services/barber_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +33,13 @@ class AdminBarbersScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final doc = docs[index];
               final data = doc.data() as Map<String, dynamic>;
-              final barber = Barber.fromMap(data, id: doc.id);
+
+              // Lấy trực tiếp 3 trường dữ liệu
+              final String name = data['name'] ?? 'Chưa có tên';
+              final String specialty =
+                  data['specialty'] ?? 'Chưa có chuyên môn';
+              final String imageUrl = data['imageUrl'] ?? '';
+
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 6),
@@ -42,18 +47,16 @@ class AdminBarbersScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: ListTile(
-                  leading:
-                      barber.avatarUrl != null && barber.avatarUrl!.isNotEmpty
-                      ? CircleAvatar(
-                          backgroundImage: NetworkImage(barber.avatarUrl!),
-                        )
+                  // Sử dụng imageUrl (từ ảnh bạn cung cấp) làm ảnh đại diện
+                  leading: imageUrl.isNotEmpty
+                      ? CircleAvatar(backgroundImage: NetworkImage(imageUrl))
                       : const CircleAvatar(child: Icon(Icons.person)),
                   title: Text(
-                    barber.name,
+                    name,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    barber.specialty,
+                    specialty,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -91,13 +94,11 @@ class AdminBarbersScreen extends StatelessWidget {
     required String label,
     TextInputType? keyboardType,
     int maxLines = 1,
-    void Function(String)? onChanged,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
@@ -115,15 +116,10 @@ class AdminBarbersScreen extends StatelessWidget {
     String? docId,
     Map<String, dynamic>? initial,
   }) {
+    // Chỉ giữ lại 3 controller cho 3 trường
     final nameController = TextEditingController(text: initial?['name'] ?? '');
     final specialtyController = TextEditingController(
       text: initial?['specialty'] ?? '',
-    );
-    final descController = TextEditingController(
-      text: initial?['description'] ?? '',
-    );
-    final avatarController = TextEditingController(
-      text: initial?['avatarUrl'] ?? '',
     );
     final imageController = TextEditingController(
       text: initial?['imageUrl'] ?? '',
@@ -147,21 +143,15 @@ class AdminBarbersScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildTextField(
                   controller: specialtyController,
-                  label: 'Chuyên môn (VD: Cắt tóc nam, Uốn, Nhuộm...)',
-                ),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  controller: descController,
-                  label: 'Mô tả thêm về kinh nghiệm, kỹ năng...',
-                  maxLines: 3,
+                  label: 'Chuyên môn (VD: Kiểu tóc hiện đại)',
                 ),
                 const SizedBox(height: 16),
-
                 _buildTextField(
-                  controller: avatarController,
-                  label: 'URL ảnh đại diện',
+                  controller: imageController,
+                  label: 'URL ảnh (dùng làm ảnh đại diện)',
                 ),
-                if (avatarController.text.isNotEmpty) ...[
+                // Hiển thị ảnh preview
+                if (imageController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Center(
                     child: Container(
@@ -169,37 +159,12 @@ class AdminBarbersScreen extends StatelessWidget {
                       height: 120,
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(60),
-                        image: avatarController.text.isNotEmpty
-                            ? DecorationImage(
-                                image: NetworkImage(avatarController.text),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                        borderRadius: BorderRadius.circular(10),
+                        image: DecorationImage(
+                          image: NetworkImage(imageController.text),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-
-                _buildTextField(
-                  controller: imageController,
-                  label: 'URL ảnh bìa',
-                ),
-                if (imageController.text.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                      image: imageController.text.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(imageController.text),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
                     ),
                   ),
                 ],
@@ -220,12 +185,11 @@ class AdminBarbersScreen extends StatelessWidget {
                       : () async {
                           try {
                             setState2(() => isSaving = true);
+                            // Chỉ lưu 3 trường dữ liệu
                             final data = {
                               'name': nameController.text.trim(),
                               'specialty': specialtyController.text.trim(),
-                              'description': descController.text.trim(),
                               'imageUrl': imageController.text.trim(),
-                              'avatarUrl': avatarController.text.trim(),
                               'updatedAt': FieldValue.serverTimestamp(),
                             };
 
