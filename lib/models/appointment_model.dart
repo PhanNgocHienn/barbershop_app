@@ -26,17 +26,44 @@ class Appointment {
     required this.status,
   });
 
+  /// Safely constructs an Appointment from a Firestore DocumentSnapshot.
+  /// If startTime/endTime are missing or null in Firestore, we fall back to
+  /// a sensible default (DateTime.now()) to avoid runtime TypeErrors.
   factory Appointment.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
+
+    // Read Timestamp fields safely (they may be null or missing)
+    final Timestamp? startTimestamp = data['startTime'] is Timestamp
+        ? data['startTime'] as Timestamp
+        : null;
+    final Timestamp? endTimestamp = data['endTime'] is Timestamp
+        ? data['endTime'] as Timestamp
+        : null;
+
     return Appointment(
       id: doc.id,
       userId: data['userId'] ?? '',
       barberId: data['barberId'] ?? '',
       serviceName: data['serviceName'] ?? 'Không rõ dịch vụ',
       servicePrice: (data['servicePrice'] ?? 0).toDouble(),
-      startTime: (data['startTime'] as Timestamp).toDate(),
-      endTime: (data['endTime'] as Timestamp).toDate(),
+      startTime: startTimestamp != null
+          ? startTimestamp.toDate()
+          : DateTime.now(),
+      endTime: endTimestamp != null ? endTimestamp.toDate() : DateTime.now(),
       status: data['status'] ?? 'Không rõ',
     );
+  }
+
+  /// Optional: convert Appointment back to map for saving to Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'barberId': barberId,
+      'serviceName': serviceName,
+      'servicePrice': servicePrice,
+      'startTime': Timestamp.fromDate(startTime),
+      'endTime': Timestamp.fromDate(endTime),
+      'status': status,
+    };
   }
 }
