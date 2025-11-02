@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:barbershop_app/screens/barber_details_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -231,10 +230,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           padding: const EdgeInsets.only(top: 8, bottom: 8),
           itemCount: appointmentDocs.length,
           itemBuilder: (context, index) {
-            final appointment = Appointment.fromFirestore(
-              appointmentDocs[index],
-            );
-            return FutureBuilder<Map<String, String>>(
+            try {
+              final appointment = Appointment.fromFirestore(
+                appointmentDocs[index],
+              );
+              return FutureBuilder<Map<String, String>>(
               future: _getBarberDetails(appointment.barberId),
               builder: (context, barberSnapshot) {
                 if (!barberSnapshot.hasData) {
@@ -267,6 +267,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 );
               },
             );
+            } catch (e) {
+              debugPrint('Lỗi khi tải appointment ${appointmentDocs[index].id}: $e');
+              return ListTile(
+                title: const Text('Lỗi khi tải lịch hẹn'),
+                subtitle: Text('${appointmentDocs[index].id}: ${e.toString()}'),
+              );
+            }
           },
         );
       },

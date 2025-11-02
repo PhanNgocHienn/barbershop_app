@@ -2,6 +2,7 @@
 
 import 'package:barbershop_app/screens/change_password_screen.dart';
 import 'package:barbershop_app/screens/edit_profile_screen.dart';
+import 'package:barbershop_app/screens/chat_screen.dart';
 import 'package:barbershop_app/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +73,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
+            ProfileMenuItem(
+              icon: Icons.chat_bubble_outline,
+              title: 'Chat với Admin',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => const ChatScreen(),
+                ),
+              ),
+            ),
             ProfileMenuItem(
               icon: Icons.logout,
               title: 'Đăng xuất',

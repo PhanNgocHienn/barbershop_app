@@ -1,7 +1,7 @@
 // lib/auth_gate.dart
 
 import 'package:barbershop_app/screens/auth_screen.dart';
-import 'package:barbershop_app/screens/main_screen.dart'; // THAY ĐỔI IMPORT TẠI ĐÂY
+import 'package:barbershop_app/screens/main_screen.dart';
 import 'package:barbershop_app/screens/admin/admin_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:barbershop_app/services/auth_service.dart';
@@ -51,6 +51,7 @@ class AuthGate extends StatelessWidget {
               }
 
               final bool isAdmin = userData?['isAdmin'] == true;
+              
               if (isAdmin) return const AdminScreen();
               return const MainScreen();
             },

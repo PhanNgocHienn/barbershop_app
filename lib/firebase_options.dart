@@ -52,6 +52,7 @@ class DefaultFirebaseOptions {
     authDomain: 'barbershop-app-1809b.firebaseapp.com',
     storageBucket: 'barbershop-app-1809b.firebasestorage.app',
     measurementId: 'G-LJP69HXMJS',
+    databaseURL: 'https://barbershop-app-1809b-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -60,6 +61,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '137431124273',
     projectId: 'barbershop-app-1809b',
     storageBucket: 'barbershop-app-1809b.firebasestorage.app',
+    databaseURL: 'https://barbershop-app-1809b-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -69,5 +71,6 @@ class DefaultFirebaseOptions {
     projectId: 'barbershop-app-1809b',
     storageBucket: 'barbershop-app-1809b.firebasestorage.app',
     iosBundleId: 'com.example.barbershopApp',
+    databaseURL: 'https://barbershop-app-1809b-default-rtdb.firebaseio.com',
   );
 }

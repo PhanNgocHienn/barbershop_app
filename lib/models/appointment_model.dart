@@ -28,14 +28,33 @@ class Appointment {
 
   factory Appointment.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    // Xử lý startTime với null check
+    Timestamp? startTimeStamp = data['startTime'] as Timestamp?;
+    if (startTimeStamp == null && data['appointmentTime'] != null) {
+      // Fallback: nếu startTime null nhưng có appointmentTime, dùng appointmentTime
+      startTimeStamp = data['appointmentTime'] as Timestamp?;
+    }
+    
+    // Xử lý endTime với null check
+    Timestamp? endTimeStamp = data['endTime'] as Timestamp?;
+    if (endTimeStamp == null && startTimeStamp != null) {
+      // Nếu endTime null, tính toán từ startTime (giả sử duration 60 phút mặc định)
+      endTimeStamp = Timestamp.fromDate(startTimeStamp.toDate().add(const Duration(minutes: 60)));
+    }
+    
+    if (startTimeStamp == null || endTimeStamp == null) {
+      throw Exception('Appointment document ${doc.id} thiếu thông tin thời gian (startTime/endTime/appointmentTime)');
+    }
+    
     return Appointment(
       id: doc.id,
       userId: data['userId'] ?? '',
       barberId: data['barberId'] ?? '',
       serviceName: data['serviceName'] ?? 'Không rõ dịch vụ',
       servicePrice: (data['servicePrice'] ?? 0).toDouble(),
-      startTime: (data['startTime'] as Timestamp).toDate(),
-      endTime: (data['endTime'] as Timestamp).toDate(),
+      startTime: startTimeStamp.toDate(),
+      endTime: endTimeStamp.toDate(),
       status: data['status'] ?? 'Không rõ',
     );
   }

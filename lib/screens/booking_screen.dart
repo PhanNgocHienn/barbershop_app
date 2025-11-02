@@ -2,12 +2,12 @@
 
 import 'package:barbershop_app/models/barber_model.dart';
 import 'package:barbershop_app/models/service_model.dart';
+import 'package:barbershop_app/services/fcm_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
-import 'package:barbershop_app/screens/barber_details_screen.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -109,6 +109,23 @@ class _BookingScreenState extends State<BookingScreen> {
     );
 
     try {
+      // Kiểm tra user document có enabled = true không
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      
+      if (!userDoc.exists) {
+        EasyLoading.showError('Tài khoản chưa được thiết lập. Vui lòng đăng nhập lại.');
+        return;
+      }
+      
+      final userData = userDoc.data();
+      if (userData?['enabled'] != true) {
+        EasyLoading.showError('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ admin.');
+        return;
+      }
+
       // 4. Chống trùng slot bằng transaction + ID định danh
       final slotKey =
           '${_selectedBarberId}_${DateFormat('yyyyMMdd_HHmm').format(appointmentDateTime)}';
@@ -126,7 +143,8 @@ class _BookingScreenState extends State<BookingScreen> {
           }
         }
 
-        txn.set(docRef, {
+        final appointmentTimestamp = Timestamp.fromDate(appointmentDateTime);
+        final appointmentData = {
           // --- Dữ liệu từ Form mới ---
           'userName': _nameController.text.trim(),
           'userPhone': _phoneController.text.trim(),
@@ -138,19 +156,51 @@ class _BookingScreenState extends State<BookingScreen> {
           'serviceName': widget.service.name,
           'servicePrice': widget.service.price,
           'barberId': _selectedBarberId,
-          'startTime': Timestamp.fromDate(appointmentDateTime),
+          'startTime': appointmentTimestamp,
           'endTime': Timestamp.fromDate(
             appointmentDateTime.add(Duration(minutes: widget.service.duration)),
           ),
+          // ✅ THÊM appointmentTime để query được trong appointments_screen và admin_bookings_screen
+          'appointmentTime': appointmentTimestamp,
           'status': 'scheduled',
           'createdAt': FieldValue.serverTimestamp(),
-        });
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        debugPrint('[BookingScreen] Creating appointment with data: $appointmentData');
+        txn.set(docRef, appointmentData);
+      });
+
+      // Gửi notification đến admin
+      final appointmentId = docRef.id;
+      final userName = _nameController.text.trim();
+      final userPhone = _phoneController.text.trim();
+      final appointmentTimeStr = DateFormat('dd/MM/yyyy HH:mm').format(appointmentDateTime);
+      
+      // Gửi notification bất đồng bộ (không block UI)
+      FCMService.sendBookingNotificationToAdmins(
+        userName: userName,
+        userPhone: userPhone,
+        serviceName: widget.service.name,
+        appointmentTime: appointmentTimeStr,
+        appointmentId: appointmentId,
+      ).then((success) {
+        if (success) {
+          debugPrint('✅ FCM notification đã được gửi thành công');
+        } else {
+          debugPrint('⚠️ Không thể gửi FCM notification');
+        }
+      }).catchError((error) {
+        debugPrint('❌ Lỗi gửi FCM notification: $error');
+        // Không hiển thị lỗi cho user vì booking đã thành công
       });
 
       EasyLoading.showSuccess('Đặt lịch thành công!');
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      EasyLoading.showError(e.toString().replaceFirst('Exception: ', ''));
+      debugPrint('[BookingScreen] Error creating appointment: $e');
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      EasyLoading.showError(errorMessage.isEmpty ? 'Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại.' : errorMessage);
     } finally {
       EasyLoading.dismiss();
     }

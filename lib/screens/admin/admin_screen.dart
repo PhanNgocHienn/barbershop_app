@@ -7,6 +7,7 @@ import 'admin_barbers_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_bookings_screen.dart';
 import 'admin_analytics_screen.dart';
+import 'admin_chat_list_screen.dart';
 
 // Thêm các hằng số màu để dễ quản lý
 const Color _primaryColor = Color(0xFF00796B); // Teal[700]
@@ -18,7 +19,7 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         backgroundColor: _scaffoldBgColor, // Sử dụng hằng số
         appBar: AppBar(
@@ -55,6 +56,7 @@ class AdminScreen extends StatelessWidget {
               Tab(text: 'Barbers', icon: Icon(Icons.person)),
               Tab(text: 'Users', icon: Icon(Icons.group)),
               Tab(text: 'Bookings', icon: Icon(Icons.calendar_today)),
+              Tab(text: 'Chat', icon: Icon(Icons.chat)),
               Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
             ],
           ),
@@ -65,6 +67,7 @@ class AdminScreen extends StatelessWidget {
             AdminBarbersScreen(),
             AdminUsersScreen(),
             AdminBookingsScreen(),
+            AdminChatListScreen(),
             AdminAnalyticsScreen(),
           ],
         ),
