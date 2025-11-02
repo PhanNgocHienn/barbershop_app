@@ -2,13 +2,12 @@
 import 'package:barbershop_app/models/barber_model.dart';
 import 'package:barbershop_app/models/service_model.dart';
 import 'package:barbershop_app/screens/barber_details_screen.dart';
-import 'package:barbershop_app/screens/booking_screen.dart'; // Form ĐỘNG
+import 'package:barbershop_app/screens/booking_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-// 1. THÊM IMPORT CHO FILE MENU TĨNH
 import 'package:barbershop_app/screens/service_menu_screen.dart';
 import 'admin/admin_screen.dart';
 
@@ -21,10 +20,20 @@ class HomeScreen extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.black87,
         centerTitle: true,
-        title: const Text('BESPOKE BARBERING'),
+        title: const Text(
+          'BESPOKE BARBERING',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+          ),
+        ),
         actions: [
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
@@ -38,10 +47,12 @@ class HomeScreen extends StatelessWidget {
                   true;
               if (!isAdmin) return const SizedBox.shrink();
               return IconButton(
-                icon: const Icon(Icons.admin_panel_settings),
+                icon: const Icon(
+                  Icons.admin_panel_settings,
+                  color: Colors.white,
+                ),
                 tooltip: 'Admin',
-                onPressed: () async {
-                  // avoid hot-reload import issues
+                onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const AdminScreen()),
                   );
@@ -52,78 +63,112 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Services Section ---
-            _buildServicesSection(context, firestore),
+            // Hero Banner
+            _buildHeroBanner(),
+
+            const SizedBox(height: 24),
+
+            // Services Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildServicesSection(context, firestore),
+            ),
 
             const SizedBox(height: 40),
 
-            // --- Barbers Section ---
-            _buildBarbersSection(context, firestore, width),
+            // Barbers Section
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+              child: _buildBarbersSection(context, firestore, width),
+            ),
 
             const SizedBox(height: 40),
 
-            // --- Locations Section ---
-            _buildLocationsSection(context),
+            // Locations Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildLocationsSection(context),
+            ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  // --- Services Section (ĐÃ CẬP NHẬT VỚI NÚT MỚI) ---
+  // Hero Banner
+  Widget _buildHeroBanner() {
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.black87, Colors.grey.shade800],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.1,
+              child: Image.network(
+                'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.content_cut, color: Colors.white, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  'ĐẶT LỊCH HÔM NAY',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Trải nghiệm dịch vụ chuyên nghiệp',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Services Section
   Widget _buildServicesSection(
     BuildContext context,
     FirebaseFirestore firestore,
   ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch, // Để nút bấm co dãn
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        _buildSectionHeader(
           'DỊCH VỤ CỦA CHÚNG TÔI',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black.withOpacity(0.85),
-            letterSpacing: 0.5,
-          ),
+          'Chọn dịch vụ phù hợp với bạn',
+          Icons.design_services,
         ),
-        const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
-
-        // 2. THÊM NÚT ĐIỀU HƯỚNG TẠI ĐÂY
-        OutlinedButton.icon(
-          icon: const Icon(Icons.menu_book, color: Colors.black, size: 20),
-          label: const Text(
-            'XEM CHI TIẾT BẢNG GIÁ DỊCH VỤ',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.black.withOpacity(0.2)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          onPressed: () {
-            // Điều hướng tới BẢNG GIÁ TĨNH
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const ServiceMenuScreen(),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 20), // Thêm khoảng cách
-        // --- KẾT THÚC THÊM MỚI ---
-
-        // StreamBuilder giữ nguyên (để điều hướng qua form ĐỘNG)
         StreamBuilder<QuerySnapshot>(
           stream: firestore.collection('services').snapshots(),
           builder: (context, snapshot) {
@@ -131,14 +176,14 @@ class HomeScreen extends StatelessWidget {
               return const CompactServicesSkeleton();
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('Chưa có dịch vụ nào.'));
+              return _buildEmptyState('Chưa có dịch vụ nào');
             }
             final serviceDocs = snapshot.data!.docs;
             return Column(
               children: serviceDocs.map((doc) {
                 final service = Service.fromFirestore(doc);
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: CompactServiceCard(service: service),
                 );
               }).toList(),
@@ -149,38 +194,34 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- Barbers Section (Đã sửa lỗi treo máy) ---
+  // Barbers Section
   Widget _buildBarbersSection(
     BuildContext context,
     FirebaseFirestore firestore,
     double width,
   ) {
-    final crossAxisCount = width < 600 ? 2 : 3; // mobile: 2, tablet: 3
+    final crossAxisCount = width < 600
+        ? 2
+        : width < 900
+        ? 3
+        : 4;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        _buildSectionHeader(
           'THỢ CẮT TÓC HÀNG ĐẦU',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black.withOpacity(0.85),
-            letterSpacing: 0.5,
-          ),
+          'Đội ngũ chuyên nghiệp và tận tâm',
+          Icons.people,
         ),
-        const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
         StreamBuilder<QuerySnapshot>(
-          // Sửa lỗi treo máy: Giới hạn tải 10 thợ
           stream: firestore.collection('barbers').limit(10).snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const BarbersGridSkeleton();
+              return BarbersGridSkeleton(crossAxisCount: crossAxisCount);
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('Chưa có thợ nào.'));
+              return _buildEmptyState('Chưa có thợ nào');
             }
             final barberDocs = snapshot.data!.docs;
             return GridView.builder(
@@ -188,9 +229,9 @@ class HomeScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                childAspectRatio: 0.7,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
               ),
               itemCount: barberDocs.length,
               itemBuilder: (context, index) {
@@ -204,7 +245,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- Locations Section (Giữ nguyên) ---
+  // Locations Section
   Widget _buildLocationsSection(BuildContext context) {
     final locations = [
       {
@@ -231,19 +272,12 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        _buildSectionHeader(
           'ĐỊA ĐIỂM CỦA CHÚNG TÔI',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black.withOpacity(0.85),
-            letterSpacing: 0.5,
-          ),
+          'Tìm cửa hàng gần bạn nhất',
+          Icons.location_on,
         ),
-        const SizedBox(height: 8),
-        Container(width: 80, height: 3, color: Colors.black),
         const SizedBox(height: 20),
         Column(
           children: locations.map((loc) {
@@ -262,6 +296,69 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Section Header
+  Widget _buildSectionHeader(String title, String subtitle, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Empty State
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Location Card
   Widget _buildLocationCard(
     String title,
     String address,
@@ -271,23 +368,55 @@ class HomeScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+          Stack(
+            children: [
+              CachedNetworkImage(
+                imageUrl: imageUrl,
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.stars, color: Colors.amber, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Premium',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -297,24 +426,36 @@ class HomeScreen extends StatelessWidget {
                     color: Colors.black87,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  address,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        address,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: Colors.black54,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
                     fontSize: 13,
-                    height: 1.4,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -326,7 +467,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// --- Compact Service Card (Giữ nguyên điều hướng ĐỘNG) ---
+// Compact Service Card
 class CompactServiceCard extends StatelessWidget {
   final Service service;
   const CompactServiceCard({super.key, required this.service});
@@ -335,60 +476,116 @@ class CompactServiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Điều hướng đến form ĐỘNG với dịch vụ cụ thể
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => BookingScreen(service: service),
           ),
         );
       },
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300, width: 1),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.content_cut,
+                  color: Colors.black87,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      service.name,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${service.duration} phút',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    service.name,
+                    '${service.price.toStringAsFixed(0)}đ',
                     style: const TextStyle(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${service.duration} phút',
-                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'ĐẶT NGAY',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            Text(
-              '${service.price.toStringAsFixed(0)}đ',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// --- Barber Card (Đã sửa lỗi bo góc) ---
+// Barber Grid Card
 class BarberGridCard extends StatelessWidget {
   final Barber barber;
   const BarberGridCard({super.key, required this.barber});
@@ -403,53 +600,107 @@ class BarberGridCard extends StatelessWidget {
           ),
         );
       },
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        // Sửa lỗi bo góc: Thêm clipBehavior
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              // Bỏ ClipRRect thừa
-              child: barber.imageUrl?.isNotEmpty == true
-                  ? CachedNetworkImage(
-                      imageUrl: barber.imageUrl!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: Colors.grey[200]),
-                    )
-                  : Container(
-                      color: Colors.grey[200],
+              flex: 3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  barber.imageUrl?.isNotEmpty == true
+                      ? CachedNetworkImage(
+                          imageUrl: barber.imageUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey[200],
+                          child: Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        shape: BoxShape.circle,
+                      ),
                       child: const Icon(
-                        Icons.person,
-                        size: 50,
-                        color: Colors.grey,
+                        Icons.star,
+                        color: Colors.amber,
+                        size: 16,
                       ),
                     ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Text(
-                    barber.name ?? 'Chưa có tên',
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    barber.specialty ?? 'Chưa có chuyên môn',
-                    style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                 ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      barber.name ?? 'Chưa có tên',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        barber.specialty ?? 'Chuyên gia',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -459,23 +710,24 @@ class BarberGridCard extends StatelessWidget {
   }
 }
 
-// --- Skeleton Loaders ---
+// Skeleton Loaders
 class CompactServicesSkeleton extends StatelessWidget {
   const CompactServicesSkeleton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[200]!,
+      baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: Column(
         children: List.generate(
           3,
           (_) => Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            height: 100,
+            margin: const EdgeInsets.only(bottom: 12),
+            height: 90,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
         ),
@@ -485,26 +737,28 @@ class CompactServicesSkeleton extends StatelessWidget {
 }
 
 class BarbersGridSkeleton extends StatelessWidget {
-  const BarbersGridSkeleton({super.key});
+  final int crossAxisCount;
+  const BarbersGridSkeleton({super.key, this.crossAxisCount = 2});
+
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[200]!,
+      baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.7,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
         ),
         itemCount: 4,
         itemBuilder: (_, __) => Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

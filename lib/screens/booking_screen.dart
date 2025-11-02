@@ -112,8 +112,9 @@ class _BookingScreenState extends State<BookingScreen> {
       // 4. Chống trùng slot bằng transaction + ID định danh
       final slotKey =
           '${_selectedBarberId}_${DateFormat('yyyyMMdd_HHmm').format(appointmentDateTime)}';
-      final docRef =
-          FirebaseFirestore.instance.collection('appointments').doc(slotKey);
+      final docRef = FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(slotKey);
 
       await FirebaseFirestore.instance.runTransaction((txn) async {
         final snap = await txn.get(docRef);
@@ -137,7 +138,10 @@ class _BookingScreenState extends State<BookingScreen> {
           'serviceName': widget.service.name,
           'servicePrice': widget.service.price,
           'barberId': _selectedBarberId,
-          'appointmentTime': Timestamp.fromDate(appointmentDateTime),
+          'startTime': Timestamp.fromDate(appointmentDateTime),
+          'endTime': Timestamp.fromDate(
+            appointmentDateTime.add(Duration(minutes: widget.service.duration)),
+          ),
           'status': 'scheduled',
           'createdAt': FieldValue.serverTimestamp(),
         });
@@ -521,7 +525,28 @@ class _BookingScreenState extends State<BookingScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(child: Text('Lỗi khi tải dữ liệu giờ.'));
+          // Hiện lỗi chi tiết để biết nếu cần tạo index hoặc fix rules
+          final err = snapshot.error?.toString() ?? 'Unknown error';
+          debugPrint('Error loading time slots: $err');
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 36),
+                const SizedBox(height: 8),
+                const Text(
+                  'Lỗi khi tải dữ liệu giờ:',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SelectableText(err, style: const TextStyle(color: Colors.red)),
+              ],
+            ),
+          );
         }
 
         final bookedSlots = snapshot.data?.docs.map((doc) {
@@ -605,7 +630,7 @@ class _BookingScreenState extends State<BookingScreen> {
     return Column(
       children: [
         Text(
-          'Trong trường hợp đặt lịch gấp trực tiếp, quý khách vui lòng ghé Page Highfive Barbershop hoặc gọi hotline 0908.421.461',
+          'Trong trường hợp đặt lịch gấp trực tiếp, quý khách vui lòng ghé Page Barbershop hoặc gọi hotline 0946368791',
           textAlign: TextAlign.center,
           style: TextStyle(color: textColor, fontSize: 13, height: 1.4),
         ),

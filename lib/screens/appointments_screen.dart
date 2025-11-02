@@ -399,10 +399,10 @@ class AppointmentCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ngày: ${DateFormat('dd/MM/yyyy').format(appointment.appointmentTime)}',
+                      'Ngày: ${DateFormat('dd/MM/yyyy').format(appointment.startTime)}',
                     ),
                     Text(
-                      'Giờ: ${DateFormat('HH:mm').format(appointment.appointmentTime)}',
+                      'Giờ: ${DateFormat('HH:mm').format(appointment.startTime)}',
                     ),
                   ],
                 ),

@@ -34,13 +34,14 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final baseQuery = FirebaseFirestore.instance
-        .collection('appointments')
-        .orderBy('appointmentTime', descending: true);
+    // Build query: apply optional filter first, then orderBy.
+    Query baseQuery = FirebaseFirestore.instance.collection('appointments');
+    if (_statusFilter != null) {
+      baseQuery = baseQuery.where('status', isEqualTo: _statusFilter);
+    }
+    baseQuery = baseQuery.orderBy('appointmentTime', descending: true);
 
-    final stream = _statusFilter == null
-        ? baseQuery.snapshots()
-        : baseQuery.where('status', isEqualTo: _statusFilter).snapshots();
+    final stream = baseQuery.snapshots();
 
     return Scaffold(
       backgroundColor: _scaffoldBgColor,
@@ -105,6 +106,19 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (snapshot.hasError) {
+                  // Show Firestore/indexing errors so admin can know what's wrong
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Lỗi khi tải lịch hẹn: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  );
+                }
+
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('Chưa có lịch hẹn.'));
                 }
@@ -157,7 +171,6 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                         isThreeLine: true,
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) async {
-                            // ... (Logic giữ nguyên)
                             if (value == 'delete') {
                               await FirebaseFirestore.instance
                                   .collection('appointments')
@@ -174,7 +187,6 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                             }
                           },
                           itemBuilder: (ctx) => [
-                            // ... (Các menu item giữ nguyên)
                             const PopupMenuItem(
                               value: 'scheduled',
                               child: Text('Đánh dấu scheduled'),
@@ -204,7 +216,6 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                               ),
                             ),
                           ],
-                          // Style lại Chip
                           child: Chip(
                             label: Text(
                               status,

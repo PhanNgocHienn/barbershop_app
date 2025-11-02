@@ -8,10 +8,10 @@ class Appointment {
   final String barberId;
   final String serviceName;
   final double servicePrice;
-  final DateTime appointmentTime;
+  final DateTime startTime;
+  final DateTime endTime;
   final String status;
 
-  // Chúng ta sẽ thêm thông tin của thợ cắt tóc vào đây sau khi lấy dữ liệu
   String barberName = 'Đang tải...';
   String barberImageUrl = '';
 
@@ -21,7 +21,8 @@ class Appointment {
     required this.barberId,
     required this.serviceName,
     required this.servicePrice,
-    required this.appointmentTime,
+    required this.startTime,
+    required this.endTime,
     required this.status,
   });
 
@@ -33,7 +34,8 @@ class Appointment {
       barberId: data['barberId'] ?? '',
       serviceName: data['serviceName'] ?? 'Không rõ dịch vụ',
       servicePrice: (data['servicePrice'] ?? 0).toDouble(),
-      appointmentTime: (data['appointmentTime'] as Timestamp).toDate(),
+      startTime: (data['startTime'] as Timestamp).toDate(),
+      endTime: (data['endTime'] as Timestamp).toDate(),
       status: data['status'] ?? 'Không rõ',
     );
   }
